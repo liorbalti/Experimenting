@@ -14,6 +14,7 @@ trim_coordinates, frame_sizes, transformation_matrix = ex1.get_transformation_pa
 # norm_mats['BLGF'] = np.loadtxt(open(r"Y:\Lior&Einav\Calibration\illumination 1_5_19\NormMatrix_atto.csv", "rb"), delimiter=",",dtype='float32')
 # norm_mats['GLRF'] = np.loadtxt(open(r"Y:\Lior&Einav\Calibration\illumination 1_5_19\NormMatrix_rhod.csv", "rb"), delimiter=",",dtype='float32')
 #
+#
 # bg_masks = ex1.define_background_to_remove_from_fluorescence_frame(trim_coordinates,100)
 # # food_source_masks = ex1.get_food_source_masks(trim_coordinates, frame_sizes, transformation_matrix)
 
