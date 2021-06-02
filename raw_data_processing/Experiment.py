@@ -13,23 +13,31 @@ from skimage import morphology
 
 
 class Experiment:
-    def __init__(self, path, fluoReader_type='vid', get_timestamps=False, tags_vid_prefix='GT'):
+    def __init__(self, path, fluoReader_type='img', tagsReader_type='img', get_timestamps=False, tags_vid_prefix='GT'):
         self.root_path = path
         self.path = path
         self.FluorescencePath = path
         self.TagsPath = path
+        self.missing_frames = self.read_missing_frames_file()
+        self.missing_frames_tags = self.read_missing_frames_file(tags=True)
+        self.parameters = self.read_parameters_file_to_dict()
         if fluoReader_type == 'vid':
             self.FluoReader = Reader.VideoReader(path, prefix='UI')
         elif fluoReader_type == 'img':
             self.FluoReader = Reader.ImageReader(path, prefix='UI')
         else:
             raise ValueError('invalid fluoReader_type: ' + fluoReader_type + '. Must be "vid" or "img".')
-        self.TagsReader = Reader.VideoReader(path, prefix=tags_vid_prefix, get_timestamps=get_timestamps)
-        self.missing_frames = self.read_missing_frames_file()
-        self.missing_frames_tags = self.read_missing_frames_file(tags=True)
-        self.parameters = self.read_parameters_file_to_dict()
+        if tagsReader_type == 'vid':
+            self.TagsReader = Reader.VideoReader(path, prefix=tags_vid_prefix, get_timestamps=get_timestamps)
+            self.total_number_of_frames = self.TagsReader.cumulative_video_lengths[-1]-self.parameters['tag_cam_frame_skip']
+        elif tagsReader_type == 'img':
+            self.TagsReader = Reader.ImageReader(path, prefix=tags_vid_prefix)
+            self.total_number_of_frames = len(self.TagsReader.file_list)-self.parameters['tag_cam_frame_skip']
+        else:
+            raise ValueError('invalid tagsReader_type: ' + tagsReader_type + '. Must be "vid" or "img".')
+
         self.sync_cameras_go_to_start()
-        self.total_number_of_frames = self.TagsReader.cumulative_video_lengths[-1]-self.parameters['tag_cam_frame_skip']
+
 
     def read_parameters_file_to_dict(self):
         full_path = self.root_path + sep + 'Parameters.csv'
@@ -287,7 +295,7 @@ class Experiment:
         return transformation_matrix
 
     def create_combined_frame(self,trim_coordinates,frame_sizes,transformation_matrix,bg_masks, norm_mats=None, frame_index=None,th=None,
-                              acquisition=None,color=None):
+                              acquisition=None, color=None, adjust=True, max_in=70):
 
         if frame_index is not None:
             self.go_to_frame(frame_index)
@@ -306,7 +314,7 @@ class Experiment:
 
         # transform frames
         tag_frame = Frame.TagsFrame(tag_image)
-        tag_frame.full_transform(trim_coordinates, frame_sizes, transformation_matrix)
+        tag_frame.full_transform(trim_coordinates, frame_sizes, transformation_matrix, adjust=adjust, max_in=max_in)
         fluo_frame = Frame.FluorescenceFrame(fluo_image)
         if norm_mats is None:
             fluo_frame.full_transform(trim_coordinates, th, bg_mask)

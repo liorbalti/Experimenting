@@ -89,6 +89,7 @@ class ImageReader(FileReader):
         self._frame_index = frame_index
         self.next_frame_to_read = self.file_list[self._frame_index]
         self.acquisition = self.get_acquisition_from_filename()
+        self.timestamps = self.get_timestamps()
 
     def get_acquisition_from_filename(self):
         filename_acquisition = self.next_frame_to_read[-8:-4]
@@ -109,8 +110,14 @@ class ImageReader(FileReader):
             filename = split_filename[-2]+ '_' + split_filename[-1]
             split_again = filename.split('exp')
             timestamp = split_again[0]
-            date_time = dt.strptime(timestamp, '%d-%m-%y_%H.%M.%S')
-            timestamps.append(hf.datenum(date_time))
+            date_time = dt.strptime(timestamp, '%d-%m-%y_%H.%M.%S.%f')
+            timestamp = dt.timestamp(date_time)
+            if timestamps:
+                timestamps.append(timestamp-timestamps[0])
+            else:
+                timestamps.append(timestamp)
+        timestamps[0] = 0.0
+            #timestamps.append(hf.datenum(date_time))
         return timestamps
 
     @FileReader.frame_index.setter

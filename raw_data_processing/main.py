@@ -5,9 +5,12 @@ from os import sep as sep
 import pandas as pd
 import collections
 
-expName = '11_140720'
+expName = '17_100920'
 path = r'Y:\Lior&Einav\Experiments\experiment'+expName+'\with food'
 outpath = path + sep + 'blob analysis normalized by white paper'
+adjust_tag_image = True
+max_in_tag_image = 100
+
 ex1 = Experiment.Experiment2Colors(path, get_timestamps=True)
 trim_coordinates, frame_sizes, transformation_matrix = ex1.get_transformation_parameters()
 # norm_mats = dict()
@@ -38,8 +41,8 @@ fourcc = cv2.VideoWriter_fourcc(*'XVID')
 font = cv2.FONT_HERSHEY_SIMPLEX
 outMovie=cv2.VideoWriter(outpath + sep + 'analyzed movie.avi',fourcc,20.0,(frame_sizes['Fluorescence'][1],frame_sizes['Fluorescence'][0]),True)
 
-ex1.sync_cameras_go_to_start()
-#ex1.go_to_frame(8888)
+#ex1.sync_cameras_go_to_start()
+ex1.go_to_frame(500)
 
 print('start analysis')
 available_frame_to_read = True
@@ -56,7 +59,7 @@ while available_frame_to_read:
     if current_frame not in ex1.missing_frames:
         try:
             tag_frame, fluo_frame, output_frame, available_frame_to_read, acquisition, th = \
-                ex1.create_combined_frame(trim_coordinates, frame_sizes, transformation_matrix, bg_mask, norm_mats)
+                ex1.create_combined_frame(trim_coordinates, frame_sizes, transformation_matrix, bg_mask, norm_mats, adjust=adjust_tag_image, max_in=max_in_tag_image)
         except:
             break
         cv2.putText(output_frame.overlayed_image, acquisition, (50, 210), font, 2, (255, 255, 255), 5)
