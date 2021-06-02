@@ -264,7 +264,7 @@ class Tag:
         the program will keep asking the user for input on this tag before moving to the next tag.
     """
 
-    def __init__(self, tag_id, tags_df, min_detections=100, bugtag_format='bugtag'):
+    def __init__(self, tag_id, tags_df, min_detections=1000, bugtag_format='bugtag'):
         self.id = tag_id
         self.data = self.get_tag_data(tags_df,bugtag_format)
         self.random_frames = self.permute_frames(min_detections)
