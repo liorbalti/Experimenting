@@ -71,12 +71,6 @@ class FluorescenceFrame(Frame):
         self.contours = None
         self.mask = None
 
-    def binarize(self, threshold, min_blob_size=5):
-        _, BW = cv2.threshold(self.frame, threshold, 255, cv2.THRESH_BINARY)
-        # self.contours = cv2.findContours(BW,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-        cleaned_BW = morphology.remove_small_objects(BW.astype(bool), min_size=min_blob_size)
-        self.mask = cleaned_BW.astype(int)*255
-
     def full_transform(self,trim_coordinates,th,bg_mask=None,norm_mat=None,bg_image=None):
         self.normalize_illumination(norm_mat)
         self.subtract_background_image(bg_image)
@@ -84,6 +78,12 @@ class FluorescenceFrame(Frame):
         self.frame = self.trim_frame(trim_coordinates['Fluorescence'])
         self.smooth()
         self.binarize(threshold=th)
+
+    def binarize(self, threshold, min_blob_size=5):
+        _, BW = cv2.threshold(self.frame, threshold, 255, cv2.THRESH_BINARY)
+        # self.contours = cv2.findContours(BW,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        cleaned_BW = morphology.remove_small_objects(BW.astype(bool), min_size=min_blob_size)
+        self.mask = cleaned_BW.astype(int)*255
 
     def subtract_background_image(self,bg_image):
         if bg_image is not None:
