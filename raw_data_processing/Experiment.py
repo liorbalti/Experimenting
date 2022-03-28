@@ -109,16 +109,21 @@ class Experiment:
 
         min_background = {}
         for a in acquisitions:
-            R = Reader.ImageReader(self.FluorescencePath,extension=a+'.tif')
+            R = Reader.ImageReader(self.FluorescencePath, extension=a+'.tif')
             min_background[acquisition_dict[a]] = R.get_average_image(start_frame=self.parameters['fluo_cam_frame_skip'],
                                                                       calc_min=True)
 
         return min_background
 
-    def get_bg_mask_from_bg_images(self,bg_images,threshold=22,min_blob_size=700,max_hole_size=5000,dilation_radius=7):
+    def get_bg_mask_from_bg_images(self,bg_images,threshold={'red':22, 'yellow':22},min_blob_size=700,max_hole_size=5000,dilation_radius=7,
+                                   norm_mats=None):
         bg_masks = {}
         for c in ['red','yellow']:
-            _, bg_mask = cv2.threshold(bg_images[c], threshold, 255, cv2.THRESH_BINARY)
+            if norm_mats is not None:
+                norm_mat = norm_mats[c]
+                _, bg_mask = cv2.threshold(bg_images[c]/norm_mat, threshold[c], 255, cv2.THRESH_BINARY)
+            else:
+                _, bg_mask = cv2.threshold(bg_images[c], threshold[c], 255, cv2.THRESH_BINARY)
             cleaned_bg_mask = morphology.remove_small_objects(bg_mask.astype(bool), min_size=min_blob_size)
             filled_bg_mask = morphology.remove_small_holes(cleaned_bg_mask,area_threshold=max_hole_size)
             bg_masks[c] = filled_bg_mask
@@ -141,7 +146,7 @@ class Experiment:
                     missing_frames.append(int(row[0]))
         return missing_frames
 
-    def get_transformation_parameters(self):
+    def get_transformation_parameters(self, get_user_approval=True):
         """ Chooses an example frame from the end of the experiment
         Checks for saved transformation parameters
         If parameters exist, shows transformation for the example frame and requests user's approval
@@ -176,27 +181,28 @@ class Experiment:
             output_frame = Frame.OutputFrame(tag_frame, fluo_frame)
             output_frame.overlay(color=color)
 
-            plt.figure(1)
-            output_frame.show()
-            plt.pause(2)
-            user_answer = input('Enter if everything is OK, input anything else to redo')
+            if get_user_approval:
+                plt.figure(1)
+                output_frame.show()
+                plt.pause(2)
+                user_answer = input('Enter if everything is OK, input anything else to redo')
 
-            if user_answer != '':
-                trim_coordinates, frame_sizes = self.find_trim_coordinates(example_frame)
-                example_frames = np.random.random_integers(100, self.total_number_of_frames, [1, 3])
-                transformation_matrices = []
-                for ex_frame1 in example_frames[0]:
-                    # make sure the example frame is not a frame which has no matching fluorescence image
-                    while ex_frame1 in self.missing_frames or ex_frame1 in self.missing_frames_tags:
-                        ex_frame1 += 1
-                        if ex_frame1 == self.total_number_of_frames:
-                            ex_frame1 = self.total_number_of_frames - 50
+                if user_answer != '':
+                    trim_coordinates, frame_sizes = self.find_trim_coordinates(example_frame)
+                    example_frames = np.random.random_integers(100, self.total_number_of_frames, [1, 3])
+                    transformation_matrices = []
+                    for ex_frame1 in example_frames[0]:
+                        # make sure the example frame is not a frame which has no matching fluorescence image
+                        while ex_frame1 in self.missing_frames or ex_frame1 in self.missing_frames_tags:
+                            ex_frame1 += 1
+                            if ex_frame1 == self.total_number_of_frames:
+                                ex_frame1 = self.total_number_of_frames - 50
 
-                    transformation_matrix1 = self.get_transformation_matrix(ex_frame1, trim_coordinates, frame_sizes)
-                    transformation_matrices.append(transformation_matrix1)
-                transformation_matrix = np.mean(transformation_matrices, axis=0)
-                with open(self.root_path + sep + 'transformation_parameters.pickle', 'wb') as f:
-                    pickle.dump([trim_coordinates, frame_sizes, transformation_matrix], f)
+                        transformation_matrix1 = self.get_transformation_matrix(ex_frame1, trim_coordinates, frame_sizes)
+                        transformation_matrices.append(transformation_matrix1)
+                    transformation_matrix = np.mean(transformation_matrices, axis=0)
+                    with open(self.root_path + sep + 'transformation_parameters.pickle', 'wb') as f:
+                        pickle.dump([trim_coordinates, frame_sizes, transformation_matrix], f)
         else:
             trim_coordinates, frame_sizes = self.find_trim_coordinates(example_frame)
 
@@ -319,7 +325,7 @@ class Experiment:
         if norm_mats is None:
             fluo_frame.full_transform(trim_coordinates, th, bg_mask)
         else:
-            fluo_frame.full_transform(trim_coordinates, th, bg_mask, norm_mat= norm_mats[acquisition])
+            fluo_frame.full_transform(trim_coordinates, th, bg_mask, norm_mat=norm_mats[acquisition])
 
         # combine frames
         output_frame = Frame.OutputFrame(tag_frame, fluo_frame)
@@ -331,8 +337,8 @@ class Experiment:
 
 
 class Experiment2Colors(Experiment):
-    def __init__(self,path,fluoReader_type = 'img',get_timestamps=True,tags_vid_prefix='GT'):
-        super().__init__(path,fluoReader_type,get_timestamps=get_timestamps,tags_vid_prefix=tags_vid_prefix)
+    def __init__(self,path,fluoReader_type = 'img',tagsReader_type='img',get_timestamps=True,tags_vid_prefix='GT'):
+        super().__init__(path,fluoReader_type,tagsReader_type=tagsReader_type,get_timestamps=get_timestamps,tags_vid_prefix=tags_vid_prefix)
         self.FluorescencePath = self.path + sep + 'UIfreezer'
         self.TagsPath = self.path + sep + 'Bugtag output'
         # self.FluoReader = Reader.ImageReader(self.FluorescencePath)

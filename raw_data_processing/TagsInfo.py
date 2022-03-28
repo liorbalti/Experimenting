@@ -79,10 +79,10 @@ class AntsInfo:
         angle_corrections = next(reader)
         return angle_corrections
 
-    def make_ant_parameters_list(self):
+    def make_ant_parameters_list(self, rect_size=(30, 130), dist_from_tag=50):
         ant_parameters_list = AntObjectsList()
         for tag in self.tag_list:
-            ant_parameters = AntParameters(tag, self.angle_corrections[tag])
+            ant_parameters = AntParameters(tag, self.angle_corrections[tag], rect_size, dist_from_tag)
             ant_parameters_list.append(ant_parameters)
         return ant_parameters_list
 

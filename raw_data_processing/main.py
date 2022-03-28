@@ -5,14 +5,14 @@ from os import sep as sep
 import pandas as pd
 import collections
 
-expName = '17_100920'
+expName = '22_121020'
 path = r'Y:\Lior&Einav\Experiments\experiment'+expName+'\with food'
 outpath = path + sep + 'blob analysis normalized by white paper'
 adjust_tag_image = True
-max_in_tag_image = 100
+max_in_tag_image = 200  # 100  #
 
-ex1 = Experiment.Experiment2Colors(path, get_timestamps=True)
-trim_coordinates, frame_sizes, transformation_matrix = ex1.get_transformation_parameters()
+ex1 = Experiment.Experiment2Colors(path, get_timestamps=True, tagsReader_type='img')
+trim_coordinates, frame_sizes, transformation_matrix = ex1.get_transformation_parameters(get_user_approval=False)
 # norm_mats = dict()
 # norm_mats['BLGF'] = np.loadtxt(open(r"Y:\Lior&Einav\Calibration\illumination 1_5_19\NormMatrix_atto.csv", "rb"), delimiter=",",dtype='float32')
 # norm_mats['GLRF'] = np.loadtxt(open(r"Y:\Lior&Einav\Calibration\illumination 1_5_19\NormMatrix_rhod.csv", "rb"), delimiter=",",dtype='float32')
@@ -21,11 +21,13 @@ trim_coordinates, frame_sizes, transformation_matrix = ex1.get_transformation_pa
 # bg_masks = ex1.define_background_to_remove_from_fluorescence_frame(trim_coordinates,100)
 # # food_source_masks = ex1.get_food_source_masks(trim_coordinates, frame_sizes, transformation_matrix)
 
+print('setting normalization and background')
 norm_mats = ex1.get_fluo_background_from_paper()
 norm_mats['BLGF'] = norm_mats['yellow']
 norm_mats['GLRF'] = norm_mats['red']
 bg_images = ex1.get_fluo_background_from_min_filter()
-bg_mask = ex1.get_bg_mask_from_bg_images(bg_images)
+bg_thresholds = {'red': ex1.parameters['Red_threshold']-13, 'yellow': ex1.parameters['Yellow_threshold']-10}
+bg_mask = ex1.get_bg_mask_from_bg_images(bg_images, threshold=bg_thresholds, norm_mats=norm_mats, dilation_radius=15)
 
 
 # Tag data
@@ -33,16 +35,17 @@ print('getting tag data')
 ants_info = TI.AntsInfo(path)
 ants_info_all_frames = ants_info.parse_tag_data()
 angle_corrections = ants_info.get_angle_corrections()
-ant_parameters_list = ants_info.make_ant_parameters_list()
+ant_parameters_list = ants_info.make_ant_parameters_list()  # rect_size=(30, 155))
 
 
 # definitions for video writer:
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 font = cv2.FONT_HERSHEY_SIMPLEX
-outMovie=cv2.VideoWriter(outpath + sep + 'analyzed movie.avi',fourcc,20.0,(frame_sizes['Fluorescence'][1],frame_sizes['Fluorescence'][0]),True)
+outMovie = cv2.VideoWriter(outpath + sep + 'analyzed movie.avi', fourcc, 20.0,
+                           (frame_sizes['Fluorescence'][1], frame_sizes['Fluorescence'][0]), True)
 
-#ex1.sync_cameras_go_to_start()
-ex1.go_to_frame(500)
+ex1.sync_cameras_go_to_start()
+# ex1.go_to_frame(500)
 
 print('start analysis')
 available_frame_to_read = True
@@ -59,7 +62,8 @@ while available_frame_to_read:
     if current_frame not in ex1.missing_frames:
         try:
             tag_frame, fluo_frame, output_frame, available_frame_to_read, acquisition, th = \
-                ex1.create_combined_frame(trim_coordinates, frame_sizes, transformation_matrix, bg_mask, norm_mats, adjust=adjust_tag_image, max_in=max_in_tag_image)
+                ex1.create_combined_frame(trim_coordinates, frame_sizes, transformation_matrix, bg_mask, norm_mats,
+                                          adjust=adjust_tag_image, max_in=max_in_tag_image)
         except:
             break
         cv2.putText(output_frame.overlayed_image, acquisition, (50, 210), font, 2, (255, 255, 255), 5)

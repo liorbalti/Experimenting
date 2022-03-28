@@ -13,8 +13,8 @@ from raw_data_processing import Reader
 # images_path = r'F:\Lior\Deep learning\Matlab\Deep Learning scripts\Classifying\for paper\images for example'
 # output_path = images_path
 # add_numbers=True
-images_path = r'Y:\Lior&Einav\Experiments\experiment17_100920\with food\DXgrabber'   # path to folder of images
-output_path = r'Y:\Lior&Einav\Experiments\experiment17_100920\with food\Bugtag output'
+images_path = r'Y:\Lior&Einav\Experiments\experiment12_150720\with food\DXgrabber_images'   # path to folder of images
+output_path = r'Y:\Lior&Einav\Experiments\experiment12_150720\with food\Bugtag output'
 add_numbers = True  # option to write tag numbers on the image
 show_preview = False  # option to preview the tagged image
 create_video = True  # option to create a video
@@ -23,7 +23,7 @@ create_video = True  # option to create a video
 bugtag_host = "127.0.0.1"
 bugtag_port = 8200
 bugtag_DB = r"C:\BugTag\conf\tagDB_300best.csv"
-bugtag_profile = r"D:\Lior\phd\BugTag_profile_Lior.prf"
+bugtag_profile = r"Y:\Lior&Einav\Experiments\BugTag_profile_Lior_adaptive_thres3_win85.prf"
 
 
 class BugTag_server():

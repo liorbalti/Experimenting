@@ -100,7 +100,7 @@ class FluorescenceFrame(Frame):
     def normalize_illumination(self,normalization_matrix):
         if normalization_matrix is not None:
             tempI = self.frame/normalization_matrix
-            self.frame = np.array(tempI,dtype='float32')
+            self.frame = np.array(tempI, dtype='float32')
 
     def smooth(self, d=11, sigma=20):
         smoothed = cv2.bilateralFilter(self.frame, d, sigma, sigma)
@@ -133,16 +133,16 @@ class AntFluoImage(FluorescenceFrame):
 
     def smooth(self, n=5, filter_type='median'):
         if filter_type == 'mean':
-            self.frame = cv2.blur(self.frame, (n,n))
+            self.frame = cv2.blur(self.frame, (n, n))
         elif filter_type == 'median':
-            self.frame = cv2.medianBlur(self.frame,n)
+            self.frame = cv2.medianBlur(self.frame, n)
 
     def fill(self):
         self.mask = blobs.fill_holes(self.mask)
 
     def make_rectangle_mask(self, ant_parameters: TagsInfo.AntParameters):
-        rect = hf.make_rectangle(self.tag_x, self.tag_y, self.ant.angle,ant_parameters.rectangle_size[0],
-                                     ant_parameters.rectangle_size[1],ant_parameters.dist_from_tag)
+        rect = hf.make_rectangle(self.tag_x, self.tag_y, self.ant.angle, ant_parameters.rectangle_size[0],
+                                     ant_parameters.rectangle_size[1], ant_parameters.dist_from_tag)
         rect_mask = cv2.fillPoly(np.zeros_like(self.mask), [rect.reshape(-1, 2)], 1, 1)
         self.rect_mask = rect_mask
 
@@ -158,15 +158,15 @@ class AntFluoImage(FluorescenceFrame):
             # contours, hierarchy = cv2.findContours(copy(np.uint8(self.mask)), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             for contour in contours:
                 current_blob = np.zeros_like(self.mask)
-                cv2.drawContours(current_blob,[contour],0,255,-1)
-                intersection2 = np.sum(cv2.bitwise_and(current_blob,current_blob,mask=np.uint8(self.rect_mask)))
+                cv2.drawContours(current_blob, [contour], 0, 255, -1)
+                intersection2 = np.sum(cv2.bitwise_and(current_blob, current_blob, mask=np.uint8(self.rect_mask)))
 
                 if intersection2 > 0:
                     #m = cv2.moments(contour)
                     #total_blob_area += m['m00']
-                    current_blob_area = np.sum(current_blob>0)
+                    current_blob_area = np.sum(current_blob > 0)
                     total_blob_area += current_blob_area
-                    grayscale_blob = cv2.bitwise_and(self.frame,self.frame,mask=np.uint8(current_blob))
+                    grayscale_blob = cv2.bitwise_and(self.frame, self.frame, mask=np.uint8(current_blob))
                     total_blob_intensity += np.sum(grayscale_blob)
 
                     all_blobs_in_rect += current_blob
@@ -180,7 +180,7 @@ class OutputFrame:
         self.tags_frame = tags_frame
         self.fluo_frame = fluo_frame
         if len(tags_frame.frame.shape) == 2:
-            self.overlayed_image = cv2.cvtColor(tags_frame.frame,cv2.COLOR_GRAY2RGB)
+            self.overlayed_image = cv2.cvtColor(tags_frame.frame, cv2.COLOR_GRAY2RGB)
         else:
             self.overlayed_image = tags_frame.frame
 
@@ -192,11 +192,11 @@ class OutputFrame:
             # color_rgb = (173, 255, 47) green-yellow
             # color_rgb = (30,144,255) blue
             color_rgb = (255, 215, 0)  # gold
-        self.overlayed_image = hf.imoverlay(self.overlayed_image,self.fluo_frame.mask,color_rgb)
+        self.overlayed_image = hf.imoverlay(self.overlayed_image, self.fluo_frame.mask, color_rgb)
 
     def insert_food_source_mask(self,food_source_masks):  # ,color):
-        for color, color_rgb in zip(['red','yellow'],[(220, 20, 60),(255, 215, 0)]):
-            self.overlayed_image = hf.imoverlay(self.overlayed_image,food_source_masks[color],color_rgb)
+        for color, color_rgb in zip(['red', 'yellow'], [(220, 20, 60), (255, 215, 0)]):
+            self.overlayed_image = hf.imoverlay(self.overlayed_image, food_source_masks[color], color_rgb)
 
     def show(self):
         plt.imshow(self.overlayed_image)
